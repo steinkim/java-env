@@ -17,6 +17,7 @@
 package com.zoyi.util.env;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Properties;
 
 public class Environment extends Properties {
@@ -49,6 +50,14 @@ public class Environment extends Properties {
 
   public static String get(String key, String defaultValue) {
     return getSingleton().getProperty(key, defaultValue);
+  }
+
+  public static Integer getInt(String key)  {
+    return Integer.parseInt(get(key));
+  }
+
+  public static Integer getInt(String key, int defaultValue)  {
+    return Optional.ofNullable(get(key)).map(Integer::parseInt).orElse(defaultValue);
   }
 }
 
