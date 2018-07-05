@@ -16,40 +16,71 @@
 
 package com.zoyi.util.env;
 
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
 
-public class Environment extends Properties {
+public class Environment {
   private static Environment environment;
   private static final Object lock = new Object();
+  private Properties props;
 
   public static Environment getSingleton() {
     if (environment == null) {
       synchronized (lock) {
         if (environment == null) {
           environment = new Environment();
+          environment.initialize();
         }
       }
     }
     return environment;
   }
 
-  private Environment() {
+  private InputStream getResourceStream(String path) {
+    return getClass().getResourceAsStream(path);
+  }
+
+  private boolean tryLoadProperties() {
     try {
-      load(getClass().getResourceAsStream("/" + JavaEnv.get() + ".properties"));
+      this.props.load(getResourceStream("/" + JavaEnv.get() + ".properties"));
+      return true;
     } catch (IOException e) {
-      e.printStackTrace();
+      return false;
+    }
+  }
+
+  private boolean tryLoadYaml() {
+    InputStream in = getResourceStream("/" + JavaEnv.get() + ".yml");
+    if (in == null) {
+      in = getResourceStream("/" + JavaEnv.get() + ".yaml");
+    }
+    if (in == null) return false;
+    this.props.putAll(new Yaml().load(in));
+    return true;
+  }
+
+  private Environment() {
+    this.props = new Properties();
+  }
+
+  private void initialize() {
+    if (!tryLoadProperties() && !tryLoadYaml()) {
+      System.out.println("Failed to load both properties and yaml file.");
       System.exit(0);
     }
   }
 
+
   public static String get(String key) {
-    return getSingleton().getProperty(key);
+    return getSingleton().props.getProperty(key);
   }
 
   public static String get(String key, String defaultValue) {
-    return getSingleton().getProperty(key, defaultValue);
+    return getSingleton().props.getProperty(key, defaultValue);
   }
 
   public static Integer getInt(String key)  {
